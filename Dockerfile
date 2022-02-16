@@ -2,9 +2,9 @@ FROM golang:1.16 AS BUILD
 
 LABEL maintainer="Roman Tkalenko"
 
-COPY . /go/src/github.com/ClickHouse/clickhouse_exporter
+COPY . /go/src/github.com/UnitedTraders/clickhouse_exporter
 
-WORKDIR /go/src/github.com/ClickHouse/clickhouse_exporter
+WORKDIR /go/src/github.com/UnitedTraders/clickhouse_exporter
 
 RUN make init && make
 

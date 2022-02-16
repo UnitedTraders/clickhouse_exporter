@@ -1,4 +1,4 @@
-module github.com/ClickHouse/clickhouse_exporter
+module github.com/UnitedTraders/clickhouse_exporter
 
 go 1.16
 

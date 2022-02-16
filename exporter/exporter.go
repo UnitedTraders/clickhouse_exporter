@@ -50,7 +50,7 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	eventsURI.RawQuery = q.Encode()
 
 	partsURI := uri
-	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts, sum(rows) as rows from system.parts where active = 1 group by database, table")
+	q.Set("query", "select database, table, engine, sum(bytes) as bytes, count() as parts, sum(rows) as rows from system.parts where active = 1 group by database, table, engine")
 	partsURI.RawQuery = q.Encode()
 
 	return &Exporter{
@@ -151,7 +151,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 			Namespace: namespace,
 			Name:      "table_parts_bytes",
 			Help:      "Table size in bytes",
-		}, []string{"database", "table"}).WithLabelValues(part.database, part.table)
+		}, []string{"database", "table", "engine"}).WithLabelValues(part.database, part.table, part.engine)
 		newBytesMetric.Set(float64(part.bytes))
 		newBytesMetric.Collect(ch)
 
@@ -159,7 +159,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 			Namespace: namespace,
 			Name:      "table_parts_count",
 			Help:      "Number of parts of the table",
-		}, []string{"database", "table"}).WithLabelValues(part.database, part.table)
+		}, []string{"database", "table", "engine"}).WithLabelValues(part.database, part.table, part.engine)
 		newCountMetric.Set(float64(part.parts))
 		newCountMetric.Collect(ch)
 
@@ -167,7 +167,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 			Namespace: namespace,
 			Name:      "table_parts_rows",
 			Help:      "Number of rows in the table",
-		}, []string{"database", "table"}).WithLabelValues(part.database, part.table)
+		}, []string{"database", "table", "engine"}).WithLabelValues(part.database, part.table, part.engine)
 		newRowsMetric.Set(float64(part.rows))
 		newRowsMetric.Collect(ch)
 	}
@@ -247,6 +247,7 @@ func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
 type partsResult struct {
 	database string
 	table    string
+	engine   string
 	bytes    int
 	parts    int
 	rows     int
@@ -272,23 +273,24 @@ func (e *Exporter) parsePartsResponse(uri string) ([]partsResult, error) {
 		}
 		database := strings.TrimSpace(parts[0])
 		table := strings.TrimSpace(parts[1])
+		engine := strings.TrimSpace(parts[2])
 
-		bytes, err := strconv.Atoi(strings.TrimSpace(parts[2]))
+		bytes, err := strconv.Atoi(strings.TrimSpace(parts[3]))
 		if err != nil {
 			return nil, err
 		}
 
-		count, err := strconv.Atoi(strings.TrimSpace(parts[3]))
+		count, err := strconv.Atoi(strings.TrimSpace(parts[4]))
 		if err != nil {
 			return nil, err
 		}
 
-		rows, err := strconv.Atoi(strings.TrimSpace(parts[4]))
+		rows, err := strconv.Atoi(strings.TrimSpace(parts[5]))
 		if err != nil {
 			return nil, err
 		}
 
-		results = append(results, partsResult{database, table, bytes, count, rows})
+		results = append(results, partsResult{database, table, engine, bytes, count, rows})
 	}
 
 	return results, nil
